@@ -53,3 +53,28 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# CMake / Ninja build outputs
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+build.ninja
+.ninja_deps
+.ninja_log
+
+# Compiled firmware
+*.o
+*.elf
+*.bin
+*.hex
+*.map
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# VS Code
+.vscode/
+!.vscode/extensions.json
