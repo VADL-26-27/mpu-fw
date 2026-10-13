@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22.0)
 
-# Locate the existing MCUXpresso SDK.
+# Locate MCUXpresso SDK.
 get_filename_component(
     SdkRootDirPath
     "${CMAKE_CURRENT_LIST_DIR}/../../mcuxsdk"
@@ -16,18 +16,35 @@ project(mpu_m7
 
 include(${SdkRootDirPath}/CMakeLists.txt)
 
+# Collect application and board source files.
+file(GLOB APP_SOURCES CONFIGURE_DEPENDS
+    RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+    CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/board/*.c"
+)
+
 mcux_add_source(
     BASE_PATH ${CMAKE_CURRENT_SOURCE_DIR}
-    SOURCES src/main.c
+    SOURCES ${APP_SOURCES}
 )
 
 mcux_add_include(
     BASE_PATH ${CMAKE_CURRENT_SOURCE_DIR}
-    INCLUDES include
+    INCLUDES
+        include
+        board
 )
 
+# M7 resource table.
+mcux_add_source(
+    BASE_PATH ${SdkRootDirPath}
+    SOURCES middleware/multicore/remoteproc/empty_rsc_table.c
+)
+
+# Board-wide binary conversion settings.
 include(
-    ${SdkRootDirPath}/${board_root}/${board}/demo_apps/hello_world/reconfig.cmake
+    ${SdkRootDirPath}/examples/_boards/${board}/project_common.cmake
     OPTIONAL
 )
 
