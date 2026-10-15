@@ -10,10 +10,12 @@
 #include "fsl_debug_console.h"
 #include "board.h"
 #include "hardware_init.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "tasks.h"
 
 int main(void)
 {
-    char ch;
 
     BOARD_InitHardware();
 
@@ -21,9 +23,16 @@ int main(void)
 
     PRINTF("hello world.\r\n");
 
-    while (1)
+    PRINTF("Starting FreeRTOS...");
+
+    if (Tasks_Init() != pdPASS)
     {
-        ch = GETCHAR();
-        PUTCHAR(ch);
+        PRINTF("Task initialization failed\r\n");
+
+        while (1);
     }
+
+    vTaskStartScheduler();
+
+    while (1);
 }
