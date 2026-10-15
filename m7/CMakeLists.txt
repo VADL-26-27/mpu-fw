@@ -34,6 +34,7 @@ mcux_add_include(
     INCLUDES
         include
         board
+        freertos
 )
 
 # M7 resource table.
