@@ -3,6 +3,8 @@
 #include "board.h"
 #include "fsl_common.h"
 #include "fsl_pwm.h"
+#include "fsl_ecspi.h"
+#include "fsl_gpio.h"
 
 void BOARD_InitPwm(void)
 {
@@ -82,7 +84,46 @@ void BOARD_InitPwm(void)
     PWM_SetSampleValue(PWM3, 500U);
 
     PWM_StartTimer(PWM3);
+}
 
+void BOARD_InitSpi(void)
+{
+    ecspi_master_config_t config;
+
+    // ECSPI2 CLOCK CONFIG --------------------
+
+    CLOCK_SetRootMux(kCLOCK_RootEcspi2, kCLOCK_EcspiRootmuxOsc24M);
+    CLOCK_SetRootDivider(kCLOCK_RootEcspi2, 1U, 1U);
+    CLOCK_EnableRoot(kCLOCK_RootEcspi2);
+
+    // ECSPI2 PERIPHERAL CONFIG --------------------
+
+    ECSPI_MasterGetDefaultConfig(&config);
+
+    config.channel = kECSPI_Channel0;
+    config.channelConfig.channelMode = kECSPI_Master;
+    config.channelConfig.clockInactiveState = kECSPI_ClockInactiveStateHigh;
+    config.channelConfig.dataLineInactiveState = kECSPI_DataLineInactiveStateLow;
+    config.channelConfig.chipSlectActiveState = kECSPI_ChipSelectActiveStateLow;
+    config.channelConfig.polarity = kECSPI_PolarityActiveLow;
+    config.channelConfig.phase = kECSPI_ClockPhaseSecondEdge;
+
+    config.baudRate_Bps = 1000000U;
+    config.burstLength = 16U;
+    config.enableLoopback = false;
+
+    ECSPI_MasterInit(ECSPI2, &config, 24000000U);
+
+    // GPIO3_IO06, GPIO5_IO13 CONFIG --------------------
+
+    gpio_pin_config_t gpioConfig = {
+        .direction = kGPIO_DigitalOutput,
+        .outputLogic = 1U,
+        .interruptMode = kGPIO_NoIntmode
+    };
+
+    GPIO_PinInit(GPIO5, 13U, &gpioConfig);
+    GPIO_PinInit(GPIO3, 6U, &gpioConfig);
 }
 
 void BOARD_InitHardware(void)
@@ -100,4 +141,5 @@ void BOARD_InitHardware(void)
     BOARD_InitDebugConsole();
 
     BOARD_InitPwm();
+    BOARD_InitSpi();
 }
