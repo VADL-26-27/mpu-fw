@@ -184,3 +184,90 @@ status_t LSM9DS1_Init(void)
 
     return kStatus_Success;
 }
+
+status_t LSM9DS1_ReadRegisters(
+    lsm9ds1_device_t device,
+    uint8_t startReg,
+    uint8_t *buffer,
+    size_t length)
+{
+    if (buffer == NULL || length == 0U || length > 6U)
+        return kStatus_InvalidArgument;
+
+    uint8_t command;
+
+    switch (device)
+    {
+        case LSM9DS1_AG:
+            command = (startReg & 0x7FU) | 0x80U;
+            break;
+
+        case LSM9DS1_MAG:
+            command = (startReg & 0x3FU) | 0xC0U;
+            break;
+
+        default:
+            return kStatus_InvalidArgument;
+    }
+
+    // Command + up to six response bytes, packed MSB-first.
+    uint32_t txData[2] = {0U, 0U};
+    uint32_t rxData[2] = {0U, 0U};
+
+    const size_t totalBytes = length + 1U;
+    const size_t wordCount = (totalBytes + 3U) / 4U;
+
+    // ECSPI shifts the most significant bits of the burst first.
+    // The first FIFO word contains the earliest transmitted bits.
+    size_t firstWordBytes = totalBytes - (wordCount - 1U) * 4U;
+    txData[0] = (uint32_t)command << ((firstWordBytes - 1U) * 8U);
+
+    uint32_t originalConreg = ECSPI2->CONREG;
+
+    ECSPI2->CONREG =
+        (originalConreg & ~ECSPI_CONREG_BURST_LENGTH_MASK) |
+        ECSPI_CONREG_BURST_LENGTH(totalBytes * 8U - 1U);
+
+    ecspi_transfer_t transfer = {
+        .txData = txData,
+        .rxData = rxData,
+        .dataSize = wordCount,
+        .channel = kECSPI_Channel0
+    };
+
+    LSM9DS1_SetChipSelect(device, true);
+
+    status_t status = ECSPI_MasterTransferBlocking(
+        ECSPI2, &transfer);
+
+    LSM9DS1_SetChipSelect(device, false);
+
+    ECSPI2->CONREG = originalConreg;
+
+    if (status != kStatus_Success)
+        return status;
+
+    // Extract response bytes, excluding the command phase.
+    for (size_t i = 0; i < length; i++)
+    {
+        size_t byteIndex = i + 1U;
+        size_t wordIndex;
+        size_t bytePosition;
+
+        if (byteIndex < firstWordBytes)
+        {
+            wordIndex = 0U;
+            bytePosition = firstWordBytes - 1U - byteIndex;
+        }
+        else
+        {
+            wordIndex = 1U;
+            bytePosition = 3U - (byteIndex - firstWordBytes);
+        }
+
+        buffer[i] = (uint8_t)(
+            (rxData[wordIndex] >> (bytePosition * 8U)) & 0xFFU);
+    }
+
+    return kStatus_Success;
+}

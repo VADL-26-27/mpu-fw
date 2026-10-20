@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include "lsm9ds1.h"
 #include "fsl_gpio.h"
+#include "imu.h"
 
 // static void SPI_LoopbackTest(void)
 // {
@@ -64,27 +65,50 @@ int main(void)
     PRINTF("AG WHO_AM_I: 0x%02X (status %d)\r\n", agId, agStatus);
     PRINTF("MAG WHO_AM_I: 0x%02X (status %d)\r\n", magId, magStatus);
 
-    // Deselect AG
-    GPIO_PinWrite(GPIO5, 13U, 1U);
-
-    // Select MAG
-    GPIO_PinWrite(GPIO3, 6U, 0U);
-    PRINTF("MAG CS held LOW\r\n");
-
-    PRINTF("After setting LOW:\r\n");
-    PRINTF("GPIO3 GDIR: 0x%08X\r\n", GPIO3->GDIR);
-    PRINTF("GPIO3 DR:   0x%08X\r\n", GPIO3->DR);
-
-    status_t status = LSM9DS1_Init();
+    status_t status = IMU_Init();
 
     if (status != kStatus_Success)
     {
-        PRINTF("LSM9DS1 initialization failed: %d\r\n", status);
+        PRINTF("IMU initialization failed: %u\r\n",
+            (unsigned int)status);
 
         while (1);
     }
 
-    PRINTF("LSM9DS1 initialized successfully\r\n");
+    PRINTF("IMU initialized successfully\r\n");
+
+    imu_sample_t sample;
+
+    status = IMU_ReadSample(&sample);
+
+    if (status == kStatus_Success)
+    {
+        // Print scaled integer values to avoid SDK float
+        // and signed-formatting limitations.
+
+        PRINTF("Accel X magnitude (mm/s^2): %u\r\n",
+            (unsigned int)(
+                sample.accel.x < 0.0f
+                ? -sample.accel.x * 1000.0f
+                : sample.accel.x * 1000.0f));
+
+        PRINTF("Gyro X magnitude (mrad/s): %u\r\n",
+            (unsigned int)(
+                sample.gyro.x < 0.0f
+                ? -sample.gyro.x * 1000.0f
+                : sample.gyro.x * 1000.0f));
+
+        PRINTF("Mag X magnitude (uT): %u\r\n",
+            (unsigned int)(
+                sample.mag.x < 0.0f
+                ? -sample.mag.x
+                : sample.mag.x));
+    }
+    else
+    {
+        PRINTF("IMU read failed: %u\r\n",
+            (unsigned int)status);
+    }
 
     // PRINTF("Starting FreeRTOS...");
 
