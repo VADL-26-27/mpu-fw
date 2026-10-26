@@ -17,9 +17,8 @@ project(mpu_m7
 include(${SdkRootDirPath}/CMakeLists.txt)
 
 # Collect application and board source files.
-file(GLOB APP_SOURCES CONFIGURE_DEPENDS
+file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-    CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/board/*.c"
 )

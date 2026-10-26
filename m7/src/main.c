@@ -1,11 +1,3 @@
-/*
- * Copyright (c) 2013 - 2015, Freescale Semiconductor, Inc.
- * Copyright 2016-2017, 2024 NXP
- * All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
-
 #include "fsl_device_registers.h"
 #include "fsl_debug_console.h"
 #include "board.h"
@@ -18,34 +10,21 @@
 #include "lsm9ds1.h"
 #include "fsl_gpio.h"
 #include "imu.h"
+#include "control/attitude_estimator.h"
 
-// static void SPI_LoopbackTest(void)
-// {
-//     uint32_t txData = 0xA55AU;
-//     uint32_t rxData = 0U;
+static void PrintSignedScaled(float value)
+{
+    int32_t scaled = (int32_t)(value * 1000.0f);
 
-//     ecspi_transfer_t transfer = {
-//         .txData = &txData,
-//         .rxData = &rxData,
-//         .dataSize = 1U,
-//         .channel = kECSPI_Channel0
-//     };
-
-//     status_t status = ECSPI_MasterTransferBlocking(ECSPI2, &transfer);
-
-//     PRINTF("SPI TX: 0x%04X\r\n", (unsigned int)txData);
-//     PRINTF("SPI RX: 0x%04X\r\n", (unsigned int)rxData);
-//     PRINTF("SPI status: %d\r\n", (int)status);
-
-//     if ((status == kStatus_Success) && ((rxData & 0xFFFFU) == txData))
-//     {
-//         PRINTF("SPI LOOPBACK PASS\r\n");
-//     }
-//     else
-//     {
-//         PRINTF("SPI LOOPBACK FAIL\r\n");
-//     }
-// }
+    if (scaled < 0)
+    {
+        PRINTF("-%u", (unsigned int)(-scaled));
+    }
+    else
+    {
+        PRINTF("%u", (unsigned int)scaled);
+    }
+}
 
 int main(void)
 {
@@ -121,5 +100,68 @@ int main(void)
 
     // vTaskStartScheduler();
 
-    while (1);
+        attitude_estimator_t estimator;
+    AttitudeEstimator_Init(&estimator);
+
+    uint32_t count = 0;
+
+    PRINTF("Starting attitude estimator superloop\r\n");
+
+    while (1)
+    {
+        imu_sample_t raw;
+
+        status_t readStatus = IMU_ReadSample(&raw);
+
+        if (readStatus == kStatus_Success)
+        {
+            // Convert hardware sample to estimator input
+            attitude_sample_t attitudeSample = {
+                .accel = {
+                    raw.accel.x,
+                    raw.accel.y,
+                    raw.accel.z
+                },
+                .gyro = {
+                    raw.gyro.x,
+                    raw.gyro.y,
+                    raw.gyro.z
+                },
+                .mag = {
+                    raw.mag.x,
+                    raw.mag.y,
+                    raw.mag.z
+                }
+            };
+
+            quaternion_t q = AttitudeEstimator_Update(
+                &estimator,
+                &attitudeSample,
+                0.01f
+            );
+
+            // Print approximately every 20 updates
+            if (++count >= 20)
+            {
+                count = 0;
+
+                PRINTF("Q: ");
+
+                PrintSignedScaled(q.w);
+                PRINTF(" ");
+
+                PrintSignedScaled(q.x);
+                PRINTF(" ");
+
+                PrintSignedScaled(q.y);
+                PRINTF(" ");
+
+                PrintSignedScaled(q.z);
+                PRINTF("\r\n");
+            }
+        }
+
+        // Approximate 100 Hz sampling
+        SDK_DelayAtLeastUs(10000U, SystemCoreClock);
+    }
 }

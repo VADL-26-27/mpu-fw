@@ -1,11 +1,7 @@
 #ifndef QUATERNION_H
 #define QUATERNION_H
 
-typedef struct {
-    float x;
-    float y;
-    float z;
-} vector3_t;
+#include "control/vector3.h"
 
 typedef struct {
     float w;
