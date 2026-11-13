@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <time.h>
+#include <stdio.h>
 
 #define RANGEFINDER_HEADER_1       0x55U
 #define RANGEFINDER_HEADER_2       0xAAU
@@ -143,6 +144,11 @@ static rangefinder_status_t Rangefinder_ReadPacket(
         uint8_t byte;
 
         result = (int)uart_read(s_uart, &byte, 1U);
+
+        if (result > 0)
+        {
+            printf("RX: 0x%02X\n", byte);
+        }
 
         if (result < 0)
         {
