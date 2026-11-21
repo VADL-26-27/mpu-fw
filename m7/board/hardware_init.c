@@ -86,6 +86,7 @@ void BOARD_InitPwm(void)
     PWM_StartTimer(PWM3);
 }
 
+
 void BOARD_InitSpi(void)
 {
     ecspi_master_config_t config;
@@ -109,22 +110,48 @@ void BOARD_InitSpi(void)
     config.channelConfig.phase = kECSPI_ClockPhaseSecondEdge;
 
     config.baudRate_Bps = 1000000U;
-    config.burstLength = 16U;
+    config.burstLength = 8U;
     config.enableLoopback = false;
 
     ECSPI_MasterInit(ECSPI2, &config, 24000000U);
 
-    // GPIO3_IO06, GPIO5_IO13 CONFIG --------------------
+    // GPIO CONFIG --------------------
 
-    gpio_pin_config_t gpioConfig = {
+    // BNO085 chip select
+    gpio_pin_config_t csConfig = {
         .direction = kGPIO_DigitalOutput,
         .outputLogic = 1U,
         .interruptMode = kGPIO_NoIntmode
     };
 
-    GPIO_PinInit(GPIO5, 13U, &gpioConfig);
-    GPIO_PinInit(GPIO3, 6U, &gpioConfig);
+    GPIO_PinInit(GPIO5, 13U, &csConfig);
+
+    // BNO085 wake
+    gpio_pin_config_t wakeConfig = {
+        .direction = kGPIO_DigitalOutput,
+        .outputLogic = 1U,
+        .interruptMode = kGPIO_NoIntmode
+    };
+
+    GPIO_PinInit(GPIO3, 14U, &wakeConfig);
+
+    // BNO085 interrupt
+    gpio_pin_config_t intConfig = {
+        .direction = kGPIO_DigitalInput,
+        .outputLogic = 0U,
+        .interruptMode = kGPIO_IntFallingEdge
+    };
+
+    GPIO_PinInit(GPIO3, 6U, &intConfig);
+
+    GPIO_PortClearInterruptFlags(GPIO3, 1UL << 6U);
+    // GPIO_PortEnableInterrupts(GPIO3, 1UL << 6U);
+
+    // // Enable interrupt in NVIC
+    // NVIC_SetPriority(GPIO3_Combined_0_15_IRQn, 5U);
+    // EnableIRQ(GPIO3_Combined_0_15_IRQn);
 }
+
 
 void BOARD_InitHardware(void)
 {

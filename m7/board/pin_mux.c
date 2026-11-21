@@ -24,15 +24,16 @@ void BOARD_InitPins(void) {
     IOMUXC_SetPinConfig(IOMUXC_GPIO1_IO11_PWM2_OUT,
                         IOMUXC_SW_PAD_CTL_PAD_DSE(3U));
 
-    // IMU_CS_AG -> GPIO5_IO13 (J16.4)
+    // IMU_CS -> GPIO5_IO13 (J16.4)
     IOMUXC_SetPinMux(IOMUXC_ECSPI2_SS0_GPIO5_IO13, 0U);
     IOMUXC_SetPinConfig(IOMUXC_ECSPI2_SS0_GPIO5_IO13,
                         IOMUXC_SW_PAD_CTL_PAD_DSE(3U));
 
-    // IMU_CS2_M -> GPIO3_IO06 (J17.3)
+    // BNO085_INT -> GPIO3_IO06 (J17.3)
     IOMUXC_SetPinMux(IOMUXC_NAND_DATA00_GPIO3_IO06, 0U);
     IOMUXC_SetPinConfig(IOMUXC_NAND_DATA00_GPIO3_IO06,
-                        IOMUXC_SW_PAD_CTL_PAD_DSE(3U));
+                        IOMUXC_SW_PAD_CTL_PAD_PE_MASK |
+                        IOMUXC_SW_PAD_CTL_PAD_PUE_MASK);
 
     // SPI#A_SCK -> ECSPI2_SCLK (J16.2)
     IOMUXC_SetPinMux(IOMUXC_ECSPI2_SCLK_ECSPI2_SCLK, 0U);
@@ -48,6 +49,15 @@ void BOARD_InitPins(void) {
     IOMUXC_SetPinMux(IOMUXC_ECSPI2_MOSI_ECSPI2_MOSI, 0U);
     IOMUXC_SetPinConfig(IOMUXC_ECSPI2_MOSI_ECSPI2_MOSI,
                         IOMUXC_SW_PAD_CTL_PAD_DSE(3U));
+
+
+    // BNO085_WAKE -> GPIO3_IO14 (J17.10)
+    IOMUXC_SetPinMux(IOMUXC_NAND_DQS_GPIO3_IO14, 0U);
+    IOMUXC_SetPinConfig(IOMUXC_NAND_DQS_GPIO3_IO14,
+                        IOMUXC_SW_PAD_CTL_PAD_DSE(3U) |
+                        IOMUXC_SW_PAD_CTL_PAD_PE_MASK |
+                        IOMUXC_SW_PAD_CTL_PAD_PUE_MASK);
+
 
     // UART4_RXD UART4
     IOMUXC_SetPinMux(IOMUXC_UART4_RXD_UART4_RX, 0U);
